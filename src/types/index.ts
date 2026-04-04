@@ -1,13 +1,13 @@
 export type Team = 'player' | 'enemy';
 
 export type UnitType =
-  | 'knight'
-  | 'archer'
-  | 'giant'
-  | 'goblin'
-  | 'wizard'
-  | 'musketeer'
-  | 'minion';
+  | 'pharaoh_guard'
+  | 'sand_wraith'
+  | 'stone_colossus'
+  | 'oracle'
+  | 'berserker'
+  | 'blade_dancer'
+  | 'shaman';
 
 export type TowerType = 'king' | 'princess';
 

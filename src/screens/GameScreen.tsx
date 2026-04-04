@@ -14,6 +14,8 @@ import {
   deployUnit,
   getRandomCard,
   enemyAI,
+  makeAIState,
+  AIState,
 } from '../game/engine';
 import { CARD_POOL } from '../constants';
 import Arena from '../components/Arena';
@@ -37,7 +39,7 @@ export default function GameScreen() {
   stateRef.current = gameState;
 
   const lastTime = useRef<number | null>(null);
-  const lastEnemyPlay = useRef<number>(0);
+  const aiState  = useRef<AIState>(makeAIState());
   const rafId = useRef<number | null>(null);
   const nextCardRef = useRef<UnitType>(getRandomCard());
 
@@ -51,13 +53,9 @@ export default function GameScreen() {
       state = stepGame(state, dt, now);
 
       // Enemy AI
-      const { state: s2, lastEnemyPlay: lep } = enemyAI(
-        state,
-        lastEnemyPlay.current,
-        now
-      );
+      const { state: s2, ai: newAI } = enemyAI(state, aiState.current, now);
       state = s2;
-      lastEnemyPlay.current = lep;
+      aiState.current = newAI;
 
       setGameState(state);
     }
@@ -100,7 +98,7 @@ export default function GameScreen() {
   const handleRestart = useCallback(() => {
     if (rafId.current !== null) cancelAnimationFrame(rafId.current);
     lastTime.current = null;
-    lastEnemyPlay.current = 0;
+    aiState.current = makeAIState();
     const newState = buildInitialState();
     setGameState(newState);
     setSelectedCard(null);

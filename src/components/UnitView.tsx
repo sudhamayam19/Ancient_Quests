@@ -10,13 +10,13 @@ interface Props {
 }
 
 const UNIT_EMOJIS: Record<string, string> = {
-  knight: '⚔️',
-  archer: '🏹',
-  giant: '👹',
-  goblin: '👺',
-  wizard: '🧙',
-  musketeer: '🔫',
-  minion: '😈',
+  pharaoh_guard:  '𓂀',
+  sand_wraith:    '🌪',
+  stone_colossus: '🗿',
+  oracle:         '🔮',
+  berserker:      '🪓',
+  blade_dancer:   '🌙',
+  shaman:         '🦴',
 };
 
 export default function UnitView({ unit, scaleX, scaleY }: Props) {
