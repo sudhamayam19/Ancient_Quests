@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { CardDef, CardId } from '../types';
+import { CardDef, CardId } from '../../types';
 
 interface Props {
   card: CardDef;
