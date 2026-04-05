@@ -11,6 +11,7 @@ import {
   SpellType,
   BuildingType,
   Projectile,
+  SuperType,
 } from '../types';
 import {
   CARD_POOL,
@@ -252,6 +253,8 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
             targetId: null,
             alive: true,
             slowedUntil: 0,
+            superMeter: 0,
+            superFiredAt: 0,
           });
         }
       }
@@ -274,6 +277,92 @@ function getUnitColor(type: UnitType): string {
     shaman:        '#27ae60',
   };
   return colors[type] ?? '#888';
+}
+
+function getUnitSuper(type: UnitType) {
+  const card = CARD_POOL.find((c) => c.id === type);
+  return (card?.category === 'unit' && (card as any).super) ? (card as any).super : null;
+}
+
+function applySuper(
+  unit: Unit,
+  superDef: any,
+  units: Unit[],
+  towers: Tower[],
+  buildings: Building[]
+) {
+  const allyTeam: Team = unit.team;
+  const allies = units.filter((u) => u.alive && u.team === allyTeam && u.id !== unit.id);
+  const radius = superDef.radius ?? 80;
+  const potency = superDef.potency ?? 0;
+
+  switch (superDef.type) {
+    case 'heal_ally': {
+      // Find most wounded ally in radius
+      const wounded = allies
+        .filter((u) => u.hp < u.maxHp && dist(unit.position, u.position) <= radius)
+        .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+      if (wounded.length > 0) {
+        wounded[0].hp = wounded[0].maxHp;
+      }
+      break;
+    }
+    case 'shield': {
+      // Give self a shield (represented as bonus HP for now)
+      // We'll track it as a temporary maxHp increase
+      unit.maxHp += potency;
+      unit.hp += potency;
+      break;
+    }
+    case 'rage': {
+      // Boost all allies in radius damage by potency% for duration
+      for (const ally of allies) {
+        if (dist(unit.position, ally.position) <= radius) {
+          ally.damage = Math.floor(ally.damage * (1 + potency / 100));
+          // NOTE: in a full impl you'd track buff expiry — simplified here
+        }
+      }
+      break;
+    }
+    case 'chain_lightning': {
+      // Damage target then bounce to 2 nearest enemies
+      const enemies = units.filter((u) => u.alive && u.team !== allyTeam);
+      const targets = [{ id: unit.targetId, pos: unit.position }]
+        .concat(enemies.map((e) => ({ id: e.id, pos: e.position })))
+        .filter((t) => t.id !== null);
+      for (let i = 0; i < Math.min(3, targets.length); i++) {
+        applyDamage(targets[i].id!, Math.floor(unit.damage * 0.7), units, towers, buildings);
+      }
+      break;
+    }
+    case 'summon_minion': {
+      const cardDef = CARD_POOL.find((c) => c.id === unit.type);
+      if (cardDef && cardDef.category === 'unit') {
+        const spawned: Unit = {
+          id: uid(),
+          type: unit.type,
+          team: unit.team,
+          hp: 80, maxHp: 80,
+          speed: unit.speed * 1.2,
+          damage: Math.floor(unit.damage * 0.4),
+          attackRange: unit.attackRange,
+          attackSpeed: unit.attackSpeed,
+          lastAttackTime: 0,
+          targetId: null,
+          alive: true,
+          slowedUntil: 0,
+          superMeter: 9999, // minions don't have supers
+          superFiredAt: 0,
+          position: {
+            x: unit.position.x + (Math.random() * 30 - 15),
+            y: unit.position.y + (Math.random() * 30 - 15),
+          },
+        };
+        units.push(spawned);
+      }
+      break;
+    }
+  }
 }
 
 // ── Unit movement & combat ────────────────────────────────────────────────
@@ -319,6 +408,22 @@ function getUnitColor(type: UnitType): string {
           applyDamage(target.id, unit.damage, units, towers, buildings);
         }
       }
+    }
+  }
+
+  // ── Super meter fill & trigger ────────────────────────────────────────────
+  for (const unit of units) {
+    if (!unit.alive) continue;
+    const superDef = getUnitSuper(unit.type);
+    if (!superDef) continue;
+
+    // Fill meter
+    unit.superMeter = Math.min(superDef.chargeTime, unit.superMeter + dt);
+
+    // Fire when full
+    if (unit.superMeter >= superDef.chargeTime) {
+      unit.superMeter = 0;
+      applySuper(unit, superDef, units, towers, buildings);
     }
   }
 
@@ -421,6 +526,8 @@ export function deployCard(
       targetId: null,
       alive: true,
       slowedUntil: 0,
+      superMeter: 0,
+      superFiredAt: 0,
     };
     next = { ...next, units: [...next.units, unit] };
   }

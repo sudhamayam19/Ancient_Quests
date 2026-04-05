@@ -1,5 +1,25 @@
 export type Team = 'player' | 'enemy';
 
+// ── Super abilities ──────────────────────────────────────────────────────────
+export type SuperType =
+  | 'heal_ally'      // heal nearest wounded ally to full
+  | 'shield'         // give self or nearest ally a shield absorbing damage
+  | 'rage'           // boost all nearby ally damage by 40% for 4s
+  | 'chain_lightning' // deal damage to target + 2 nearest enemies
+  | 'summon_minion'; // spawn a weak copy of self nearby
+
+export interface SuperAbility {
+  type: SuperType;
+  chargeTime: number;   // seconds to fill meter
+  radius?: number;       // effect radius (for AOE supers)
+  potency?: number;      // value varies by type (heal amount, shield HP, etc.)
+  duration?: number;    // for timed effects
+}
+
+export interface SuperMeter {
+  current: number;  // 0 to chargeTime
+}
+
 // ── Card categories ────────────────────────────────────────────────────────────
 export type CardCategory = 'unit' | 'spell' | 'building';
 
@@ -58,6 +78,8 @@ export interface Unit {
   targetId: string | null;
   alive: boolean;
   slowedUntil: number;   // ms timestamp; 0 = not slowed
+  superMeter: number;     // current charge 0–chargeTime; 0 = no super
+  superFiredAt: number;   // ms timestamp when super last fired; 0 = never
 }
 
 export interface Spell {
@@ -115,7 +137,8 @@ interface BaseCardDef {
 
 export interface UnitCardDef extends BaseCardDef {
   category: 'unit';
-  unitStats: Omit<Unit, 'id' | 'team' | 'position' | 'lastAttackTime' | 'targetId' | 'alive' | 'slowedUntil'>;
+  unitStats: Omit<Unit, 'id' | 'team' | 'position' | 'lastAttackTime' | 'targetId' | 'alive' | 'slowedUntil' | 'superMeter' | 'superFiredAt'>;
+  super?: SuperAbility;
 }
 
 export interface SpellCardDef extends BaseCardDef {

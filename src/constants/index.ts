@@ -56,6 +56,11 @@ export const CARD_POOL: CardDef[] = [
       hp: 1400, maxHp: 1400,
       speed: 36, damage: 110,
       attackRange: 28, attackSpeed: 1.0,
+          },
+    super: {
+      type: 'shield',
+      chargeTime: 8,
+      potency: 400,
     },
   },
   {
@@ -70,6 +75,13 @@ export const CARD_POOL: CardDef[] = [
       hp: 260, maxHp: 260,
       speed: 68, damage: 75,
       attackRange: 22, attackSpeed: 1.6,
+          },
+    super: {
+      type: 'rage',
+      chargeTime: 10,
+      radius: 80,
+      potency: 40,  // +40% damage
+      duration: 4,
     },
   },
   {
@@ -84,6 +96,11 @@ export const CARD_POOL: CardDef[] = [
       hp: 4200, maxHp: 4200,
       speed: 18, damage: 220,
       attackRange: 34, attackSpeed: 0.6,
+          },
+    super: {
+      type: 'summon_minion',
+      chargeTime: 14,
+      radius: 60,
     },
   },
   {
@@ -98,6 +115,12 @@ export const CARD_POOL: CardDef[] = [
       hp: 520, maxHp: 520,
       speed: 32, damage: 175,
       attackRange: 105, attackSpeed: 0.88,
+          },
+    super: {
+      type: 'heal_ally',
+      chargeTime: 9,
+      radius: 90,
+      potency: 9999,  // full heal
     },
   },
   {
@@ -112,6 +135,13 @@ export const CARD_POOL: CardDef[] = [
       hp: 900, maxHp: 900,
       speed: 56, damage: 140,
       attackRange: 26, attackSpeed: 1.3,
+          },
+    super: {
+      type: 'rage',
+      chargeTime: 7,
+      radius: 100,
+      potency: 50,  // +50% damage
+      duration: 5,
     },
   },
   {
@@ -126,6 +156,11 @@ export const CARD_POOL: CardDef[] = [
       hp: 680, maxHp: 680,
       speed: 72, damage: 120,
       attackRange: 24, attackSpeed: 1.4,
+          },
+    super: {
+      type: 'shield',
+      chargeTime: 6,
+      potency: 300,
     },
   },
   {
@@ -140,6 +175,12 @@ export const CARD_POOL: CardDef[] = [
       hp: 780, maxHp: 780,
       speed: 28, damage: 210,
       attackRange: 85, attackSpeed: 0.75,
+          },
+    super: {
+      type: 'heal_ally',
+      chargeTime: 8,
+      radius: 80,
+      potency: 9999,
     },
   },
 
