@@ -86,6 +86,21 @@ export interface Building {
   spawnType: UnitType | null;
   spawnInterval: number; // seconds; 0 = not a spawner
   lastSpawnTime: number;
+  decayTime: number;     // seconds until building expires; 0 = permanent
+  placedAt: number;      // timestamp when building was placed
+}
+
+export interface Projectile {
+  id: string;
+  team: Team;
+  from: Position;       // starting position
+  to: Position;         // target position
+  progress: number;     // 0–1 travel progress
+  damage: number;
+  targetId: string;     // what it's hitting
+  speed: number;        // pixels per second
+  color: string;        // projectile color
+  emoji?: string;       // optional emoji in center
 }
 
 // ── Card definitions (discriminated union) ────────────────────────────────────
@@ -118,6 +133,7 @@ export interface BuildingCardDef extends BaseCardDef {
   dps: number;
   spawnType: UnitType | null;
   spawnInterval: number;
+  decayTime: number;
 }
 
 export type CardDef = UnitCardDef | SpellCardDef | BuildingCardDef;
@@ -131,6 +147,7 @@ export interface GameState {
   units: Unit[];
   spells: Spell[];
   buildings: Building[];
+  projectiles: Projectile[];
   playerElixir: number;
   enemyElixir: number;
   timeLeft: number;

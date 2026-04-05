@@ -194,6 +194,7 @@ export const CARD_POOL: CardDef[] = [
     dps: 95,
     spawnType: null,
     spawnInterval: 0,
+    decayTime: 30,   // permanent structure, no decay
   },
   {
     id: 'burial_chamber',
@@ -207,6 +208,7 @@ export const CARD_POOL: CardDef[] = [
     dps: 0,
     spawnType: 'sand_wraith',
     spawnInterval: 10,
+    decayTime: 45,   // crumbles after 45 seconds
   },
   {
     id: 'inferno_trap',
@@ -220,5 +222,6 @@ export const CARD_POOL: CardDef[] = [
     dps: 180,
     spawnType: null,
     spawnInterval: 0,
+    decayTime: 20,   // short-lived trap
   },
 ];

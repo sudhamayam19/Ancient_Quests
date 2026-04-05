@@ -10,6 +10,7 @@ import {
   UnitType,
   SpellType,
   BuildingType,
+  Projectile,
 } from '../types';
 import {
   CARD_POOL,
@@ -36,6 +37,9 @@ import {
 let _counter = 0;
 const uid = () => `e_${_counter++}`;
 
+// Decay damage per second — applied to buildings that have a finite decayTime
+const DECAY_DPS = 18;
+
 // ─── Initial state ────────────────────────────────────────────────────────────
 
 export function buildInitialState(): GameState {
@@ -54,6 +58,7 @@ export function buildInitialState(): GameState {
     units: [],
     spells: [],
     buildings: [],
+    projectiles: [],
     playerElixir: 5,
     enemyElixir: 5,
     timeLeft: GAME_DURATION,
@@ -92,6 +97,32 @@ function clampToArena(pos: Position): Position {
     x: Math.max(UNIT_RADIUS, Math.min(ARENA_WIDTH  - UNIT_RADIUS, pos.x)),
     y: Math.max(UNIT_RADIUS, Math.min(ARENA_HEIGHT - UNIT_RADIUS, pos.y)),
   };
+}
+
+function applyDamage(
+  targetId: string,
+  damage: number,
+  units: Unit[],
+  towers: Tower[],
+  buildings: Building[]
+) {
+  const tIdx = towers.findIndex((t) => t.id === targetId);
+  if (tIdx !== -1) {
+    towers[tIdx].hp = Math.max(0, towers[tIdx].hp - damage);
+    if (towers[tIdx].hp === 0) towers[tIdx].alive = false;
+    return;
+  }
+  const uIdx = units.findIndex((u) => u.id === targetId);
+  if (uIdx !== -1) {
+    units[uIdx].hp = Math.max(0, units[uIdx].hp - damage);
+    if (units[uIdx].hp === 0) units[uIdx].alive = false;
+    return;
+  }
+  const bIdx = buildings.findIndex((b) => b.id === targetId);
+  if (bIdx !== -1) {
+    buildings[bIdx].hp = Math.max(0, buildings[bIdx].hp - damage);
+    if (buildings[bIdx].hp === 0) buildings[bIdx].alive = false;
+  }
 }
 
 // ─── Target finding ───────────────────────────────────────────────────────────
@@ -134,6 +165,7 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
   let units:     Unit[]     = state.units.map((u)  => ({ ...u }));
   let buildings: Building[] = state.buildings.map((b) => ({ ...b }));
   let spells:    Spell[]    = state.spells.map((s)  => ({ ...s }));
+  let projectiles: Projectile[] = state.projectiles.map((p) => ({ ...p }));
 
   // ── Spell AOE ────────────────────────────────────────────────────────────
   const expiredSpells: string[] = [];
@@ -227,7 +259,24 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
   }
   units.push(...newUnitsFromBuildings);
 
-  // ── Unit movement & combat ────────────────────────────────────────────────
+  // Ranged threshold: units with attackRange > this fire projectiles
+  const RANGED_THRESHOLD = 45;
+  const PROJECTILE_SPEED = 280; // pixels per second
+
+function getUnitColor(type: UnitType): string {
+  const colors: Record<UnitType, string> = {
+    pharaoh_guard: '#c9a84c',
+    sand_wraith:   '#d4a96a',
+    stone_colossus:'#7f8c8d',
+    oracle:        '#5d6af5',
+    berserker:     '#e74c3c',
+    blade_dancer:  '#e91e8c',
+    shaman:        '#27ae60',
+  };
+  return colors[type] ?? '#888';
+}
+
+// ── Unit movement & combat ────────────────────────────────────────────────
   for (const unit of units) {
     if (!unit.alive) continue;
 
@@ -249,27 +298,43 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
       if (now - unit.lastAttackTime >= attackInterval) {
         unit.lastAttackTime = now;
 
-        // Hit tower
-        const tIdx = towers.findIndex((t) => t.id === target.id);
-        if (tIdx !== -1) {
-          towers[tIdx].hp = Math.max(0, towers[tIdx].hp - unit.damage);
-          if (towers[tIdx].hp === 0) towers[tIdx].alive = false;
-        }
-        // Hit unit
-        const uIdx = units.findIndex((u) => u.id === target.id);
-        if (uIdx !== -1) {
-          units[uIdx].hp = Math.max(0, units[uIdx].hp - unit.damage);
-          if (units[uIdx].hp === 0) units[uIdx].alive = false;
-        }
-        // Hit building
-        const bIdx = buildings.findIndex((b) => b.id === target.id);
-        if (bIdx !== -1) {
-          buildings[bIdx].hp = Math.max(0, buildings[bIdx].hp - unit.damage);
-          if (buildings[bIdx].hp === 0) buildings[bIdx].alive = false;
+        const isRanged = unit.attackRange > RANGED_THRESHOLD;
+
+        if (isRanged) {
+          // Fire a projectile that travels to target
+          const proj: Projectile = {
+            id: uid(),
+            team: unit.team,
+            from: { ...unit.position },
+            to: { ...target.pos },
+            progress: 0,
+            damage: unit.damage,
+            targetId: target.id,
+            speed: PROJECTILE_SPEED + unit.speed * 2,
+            color: getUnitColor(unit.type),
+          };
+          projectiles.push(proj);
+        } else {
+          // Melee: instant damage
+          applyDamage(target.id, unit.damage, units, towers, buildings);
         }
       }
     }
   }
+
+  // ── Advance projectiles ───────────────────────────────────────────────────
+  const hitProjectiles: Set<string> = new Set();
+  for (const proj of projectiles) {
+    const totalDist = dist(proj.from, proj.to);
+    if (totalDist < 1) { hitProjectiles.add(proj.id); continue; }
+    const move = (proj.speed * dt) / totalDist;
+    proj.progress = Math.min(1, proj.progress + move);
+    if (proj.progress >= 1) {
+      hitProjectiles.add(proj.id);
+      applyDamage(proj.targetId, proj.damage, units, towers, buildings);
+    }
+  }
+  projectiles = projectiles.filter((p) => !hitProjectiles.has(p.id));
 
   // ── Tower defense (DPS model) ─────────────────────────────────────────────
   for (const tower of towers) {
@@ -291,6 +356,18 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
     }
   }
 
+// Decay damage per second — applied to buildings that have a finite decayTime
+const DECAY_DPS = 18;
+
+// ── Building decay ───────────────────────────────────────────────────────
+for (const building of buildings) {
+  if (!building.alive) continue;
+  if (building.decayTime > 0) {
+    building.hp = Math.max(0, building.hp - DECAY_DPS * dt);
+    if (building.hp === 0) building.alive = false;
+  }
+}
+
   units     = units.filter((u) => u.alive);
   buildings = buildings.filter((b) => b.alive);
 
@@ -311,7 +388,7 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
     phase  = 'gameover';
   }
 
-  return { ...state, towers, units, spells, buildings, playerElixir, enemyElixir, timeLeft, phase, winner };
+  return { ...state, towers, units, spells, buildings, projectiles, playerElixir, enemyElixir, timeLeft, phase, winner };
 }
 
 // ─── Deploy router ────────────────────────────────────────────────────────────
@@ -364,12 +441,14 @@ export function deployCard(
   }
 
   if (cardDef.category === 'building') {
+    // For timed buildings: HP = decayTime × DPS so the bar depletes as a countdown
+    const timedHp  = cardDef.decayTime > 0 ? cardDef.decayTime * DECAY_DPS : cardDef.hp;
     const building: Building = {
       id: uid(),
       type: cardId as BuildingType,
       team,
-      hp:         cardDef.hp,
-      maxHp:      cardDef.hp,
+      hp:         timedHp,
+      maxHp:      timedHp,
       position,
       alive:      true,
       attackRange: cardDef.attackRange,
@@ -378,6 +457,8 @@ export function deployCard(
       spawnType:  cardDef.spawnType,
       spawnInterval: cardDef.spawnInterval,
       lastSpawnTime: 0,
+      decayTime:  cardDef.decayTime,
+      placedAt:   Date.now(),
     };
     next = { ...next, buildings: [...next.buildings, building] };
   }

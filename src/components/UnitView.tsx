@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Unit } from '../types';
 import { CARD_POOL, UNIT_RADIUS } from '../constants';
 
@@ -7,6 +7,9 @@ interface Props {
   unit: Unit;
   scaleX: number;
   scaleY: number;
+  // If provided, this overrides unit.position for smooth visual interpolation
+  visualX?: number;
+  visualY?: number;
 }
 
 const UNIT_EMOJIS: Record<string, string> = {
@@ -19,28 +22,94 @@ const UNIT_EMOJIS: Record<string, string> = {
   shaman:         '🦴',
 };
 
+// Lerp helper
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
 export default function UnitView({ unit, scaleX, scaleY }: Props) {
-  const x = unit.position.x * scaleX;
-  const y = unit.position.y * scaleY;
   const r = UNIT_RADIUS * Math.min(scaleX, scaleY);
   const hpPct = unit.hp / unit.maxHp;
   const isPlayer = unit.team === 'player';
   const cardDef = CARD_POOL.find((c) => c.id === unit.type);
   const color = cardDef?.color ?? '#888';
 
+  // Visual position (smoothly interpolated, separate from game position)
+  const visualXRef = useRef(unit.position.x * scaleX);
+  const visualYRef = useRef(unit.position.y * scaleY);
+
+  // Scale pulse on attack
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Opacity for death fade
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  // HP bar color
+  const hpColor = isPlayer ? '#3a86ff' : '#e63946';
+
+  // Sync position ref when unit moves
+  useEffect(() => {
+    visualXRef.current = unit.position.x * scaleX;
+    visualYRef.current = unit.position.y * scaleY;
+  }, [unit.position.x, unit.position.y, scaleX, scaleY]);
+
+  // Attack pulse: trigger scale bump when lastAttackTime is recent
+  const lastAttackRef = useRef(unit.lastAttackTime);
+  useEffect(() => {
+    if (unit.lastAttackTime !== lastAttackRef.current) {
+      lastAttackRef.current = unit.lastAttackTime;
+      // Only pulse for melee (ranged units don't show this - they have projectiles)
+      const isRanged = (unit as any).attackRange > 45;
+      if (!isRanged) {
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.35,
+            duration: 60,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 140,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }
+  }, [unit.lastAttackTime]);
+
+  // Death fade: trigger when unit is low HP
+  const hpRef = useRef(unit.hp);
+  useEffect(() => {
+    if (unit.hp < hpRef.current && unit.hp / unit.maxHp < 0.3) {
+      Animated.timing(opacityAnim, {
+        toValue: 0.5,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+    hpRef.current = unit.hp;
+  }, [unit.hp]);
+
+  const vx = visualXRef.current;
+  const vy = visualYRef.current;
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.unit,
         {
-          left: x - r,
-          top: y - r,
+          left: vx - r,
+          top: vy - r,
           width: r * 2,
           height: r * 2,
           borderRadius: r,
           backgroundColor: color,
           borderColor: isPlayer ? '#3a86ff' : '#e63946',
           borderWidth: 2,
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
         },
       ]}
     >
@@ -54,12 +123,12 @@ export default function UnitView({ unit, scaleX, scaleY }: Props) {
             styles.hpBarFill,
             {
               width: `${Math.max(0, hpPct * 100)}%`,
-              backgroundColor: isPlayer ? '#3a86ff' : '#e63946',
+              backgroundColor: hpColor,
             },
           ]}
         />
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -68,6 +137,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    // Subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
   },
   emoji: {
     textAlign: 'center',

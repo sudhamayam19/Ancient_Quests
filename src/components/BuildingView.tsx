@@ -9,6 +9,9 @@ interface Props {
   scaleY: number;
 }
 
+// Decay damage per second applied to buildings with a finite decayTime
+const DECAY_DPS = 18;
+
 export default function BuildingView({ building, scaleX, scaleY }: Props) {
   const scale = Math.min(scaleX, scaleY);
   const r     = BUILDING_RADIUS * scale;
@@ -17,9 +20,11 @@ export default function BuildingView({ building, scaleX, scaleY }: Props) {
   const hpPct = building.hp / building.maxHp;
 
   const isPlayer = building.team === 'player';
-  const cardDef  = CARD_POOL.find((c) => c.id === building.type);
+  const cardDef  = CARD_POOL.find((c) => c.id === building.type) as any;
   const color    = cardDef?.color  ?? '#888';
   const emoji    = cardDef?.emoji  ?? '🏗️';
+
+  const hpColor = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
 
   return (
     <View
@@ -31,7 +36,7 @@ export default function BuildingView({ building, scaleX, scaleY }: Props) {
           width:           r * 2,
           height:          r * 2,
           borderRadius:    6 * scale,
-          backgroundColor: color + '33',  // transparent fill
+          backgroundColor: color + '28',
           borderColor:     isPlayer ? color : '#e63946',
           borderWidth:     2.5,
         },
@@ -39,20 +44,20 @@ export default function BuildingView({ building, scaleX, scaleY }: Props) {
     >
       <Text style={[styles.emoji, { fontSize: r * 0.9 }]}>{emoji}</Text>
 
-      {/* HP bar */}
+      {/* HP bar — doubles as the decay indicator since decay is real HP damage */}
       <View style={[styles.hpWrap, { width: r * 2.2, left: -r * 0.1 }]}>
         <View
           style={[
             styles.hpFill,
             {
               width: `${Math.max(0, hpPct * 100)}%`,
-              backgroundColor: hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c',
+              backgroundColor: hpColor,
             },
           ]}
         />
       </View>
 
-      {/* Range indicator for attack buildings (faint circle, shown at low opacity) */}
+      {/* Range indicator */}
       {building.attackRange > 0 && (
         <View
           pointerEvents="none"
@@ -78,6 +83,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   emoji: {
     textAlign: 'center',
