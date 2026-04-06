@@ -6,7 +6,8 @@ export type SuperType =
   | 'shield'         // give self or nearest ally a shield absorbing damage
   | 'rage'           // boost all nearby ally damage by 40% for 4s
   | 'chain_lightning' // deal damage to target + 2 nearest enemies
-  | 'summon_minion'; // spawn a weak copy of self nearby
+  | 'summon_minion'  // spawn a weak copy of self nearby
+  | 'piercing_arrow'; // pierce through all enemies in a line
 
 export interface SuperAbility {
   type: SuperType;
@@ -14,6 +15,7 @@ export interface SuperAbility {
   radius?: number;       // effect radius (for AOE supers)
   potency?: number;      // value varies by type (heal amount, shield HP, etc.)
   duration?: number;    // for timed effects
+  description?: string; // ability flavor text
 }
 
 export interface SuperMeter {
@@ -30,7 +32,8 @@ export type UnitType =
   | 'oracle'
   | 'berserker'
   | 'blade_dancer'
-  | 'shaman';
+  | 'shaman'
+  | 'princess_archer';
 
 export type SpellType =
   | 'sandstorm'       // medium AOE damage over 2 s

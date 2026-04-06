@@ -17,6 +17,7 @@ const UNIT_EMOJIS: Record<string, string> = {
   berserker:      '🪓',
   blade_dancer:   '🌙',
   shaman:         '🦴',
+  princess_archer:'🏹',
 };
 
 function getUnitSuper(type: string) {
@@ -30,6 +31,7 @@ const SUPER_ICONS: Record<string, string> = {
   rage:            '😤',
   chain_lightning: '⚡',
   summon_minion:   '👤',
+  piercing_arrow:  '🏹',
 };
 
 export default function UnitView({ unit, scaleX, scaleY }: Props) {

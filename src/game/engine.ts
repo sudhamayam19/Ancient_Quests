@@ -275,6 +275,7 @@ function getUnitColor(type: UnitType): string {
     berserker:     '#e74c3c',
     blade_dancer:  '#e91e8c',
     shaman:        '#27ae60',
+    princess_archer:'#ff6eb4',
   };
   return colors[type] ?? '#888';
 }
@@ -289,7 +290,8 @@ function applySuper(
   superDef: any,
   units: Unit[],
   towers: Tower[],
-  buildings: Building[]
+  buildings: Building[],
+  target?: { id: string; pos: Position }
 ) {
   const allyTeam: Team = unit.team;
   const allies = units.filter((u) => u.alive && u.team === allyTeam && u.id !== unit.id);
@@ -332,6 +334,31 @@ function applySuper(
         .filter((t) => t.id !== null);
       for (let i = 0; i < Math.min(3, targets.length); i++) {
         applyDamage(targets[i].id!, Math.floor(unit.damage * 0.7), units, towers, buildings);
+      }
+      break;
+    }
+    case 'piercing_arrow': {
+      // Fire a piercing arrow that hits all enemies in a straight line
+      if (!target) break;
+      const dirX = target.pos.x - unit.position.x;
+      const dirY = target.pos.y - unit.position.y;
+      const len  = Math.sqrt(dirX * dirX + dirY * dirY);
+      if (len > 0) {
+        const nx    = dirX / len;
+        const ny    = dirY / len;
+        const range = superDef.radius ?? 150;
+        const enemies = units.filter((u) => u.alive && u.team !== allyTeam);
+        for (const enemy of enemies) {
+          const ex   = enemy.position.x - unit.position.x;
+          const ey   = enemy.position.y - unit.position.y;
+          const proj = ex * nx + ey * ny;       // how far along the line
+          if (proj >= 0 && proj <= range) {
+            const perpDist = Math.abs(ex * ny - ey * nx);
+            if (perpDist < 20) {
+              applyDamage(enemy.id, superDef.potency ?? Math.floor(unit.damage * 2.5), units, towers, buildings);
+            }
+          }
+        }
       }
       break;
     }
@@ -423,7 +450,16 @@ function applySuper(
     // Fire when full
     if (unit.superMeter >= superDef.chargeTime) {
       unit.superMeter = 0;
-      applySuper(unit, superDef, units, towers, buildings);
+      // Resolve current target position for supers that need it
+      let supTarget: { id: string; pos: Position } | undefined;
+      if (unit.targetId) {
+        const tu = units.find((u) => u.id === unit.targetId);
+        const tt = towers.find((t) => t.id === unit.targetId);
+        const tb = buildings.find((b) => b.id === unit.targetId);
+        const found = tu ?? tt ?? tb;
+        if (found) supTarget = { id: found.id, pos: found.position };
+      }
+      applySuper(unit, superDef, units, towers, buildings, supTarget);
     }
   }
 

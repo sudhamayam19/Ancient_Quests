@@ -265,4 +265,25 @@ export const CARD_POOL: CardDef[] = [
     spawnInterval: 0,
     decayTime: 20,   // short-lived trap
   },
+  {
+    id: 'princess_archer',
+    name: 'Princess Archer',
+    cost: 4,
+    emoji: '🏹',
+    color: '#e91e8c',
+    category: 'unit',
+    unitStats: {
+      type: 'princess_archer',
+      hp: 620, maxHp: 620,
+      speed: 38, damage: 155,
+      attackRange: 120, attackSpeed: 1.1,
+    },
+    super: {
+      type: 'piercing_arrow',
+      chargeTime: 10,
+      potency: 350,
+      radius: 150,
+      description: 'Fires a piercing arrow that passes through all enemies in a line',
+    },
+  },
 ];
