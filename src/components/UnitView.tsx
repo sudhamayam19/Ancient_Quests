@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { Unit } from '../types';
 import { CARD_POOL, UNIT_RADIUS } from '../constants';
+import { getUnitSprite } from '../constants/sprites';
 
 interface Props {
   unit: Unit;
@@ -40,6 +41,7 @@ export default function UnitView({ unit, scaleX, scaleY }: Props) {
   const isPlayer = unit.team === 'player';
   const cardDef = CARD_POOL.find((c) => c.id === unit.type);
   const color = cardDef?.color ?? '#888';
+  const sprite = getUnitSprite(unit.type);
 
   const superDef = getUnitSuper(unit.type);
   const superPct = superDef ? Math.min(1, unit.superMeter / superDef.chargeTime) : 0;
@@ -113,11 +115,22 @@ export default function UnitView({ unit, scaleX, scaleY }: Props) {
   const vx = visualXRef.current;
   const vy = visualYRef.current;
 
+  // Sprite units are rendered larger; emoji units keep the circle
+  const spriteSize = r * 3.2;
+
   return (
     <Animated.View
       style={[
         styles.unit,
-        {
+        sprite ? {
+          left: vx - spriteSize / 2,
+          top: vy - spriteSize * 0.7,
+          width: spriteSize,
+          height: spriteSize,
+          borderRadius: 0,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+        } : {
           left: vx - r,
           top: vy - r,
           width: r * 2,
@@ -126,14 +139,23 @@ export default function UnitView({ unit, scaleX, scaleY }: Props) {
           backgroundColor: color,
           borderColor: isPlayer ? '#3a86ff' : '#e63946',
           borderWidth: 2,
-          transform: [{ scale: scaleAnim }],
+        },
+        {
+          transform: [{ scale: scaleAnim }, ...(isPlayer ? [] : [{ scaleX: -1 }])],
           opacity: opacityAnim,
         },
       ]}
     >
-      <Text style={[styles.emoji, { fontSize: r * 0.9 }]}>
-        {UNIT_EMOJIS[unit.type] ?? '❓'}
-      </Text>
+      {sprite ? (
+        <Image
+          source={sprite}
+          style={{ width: spriteSize, height: spriteSize, resizeMode: 'contain' }}
+        />
+      ) : (
+        <Text style={[styles.emoji, { fontSize: r * 0.9 }]}>
+          {UNIT_EMOJIS[unit.type] ?? '❓'}
+        </Text>
+      )}
 
       {/* HP bar */}
       <View style={[styles.hpBarWrap, { width: r * 2.2, left: -r * 0.1 }]}>

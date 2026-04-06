@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { Building } from '../types';
 import { BUILDING_RADIUS, CARD_POOL } from '../constants';
+import { getBuildingSprite } from '../constants/sprites';
 
 interface Props {
   building: Building;
@@ -23,14 +24,24 @@ export default function BuildingView({ building, scaleX, scaleY }: Props) {
   const cardDef  = CARD_POOL.find((c) => c.id === building.type) as any;
   const color    = cardDef?.color  ?? '#888';
   const emoji    = cardDef?.emoji  ?? '🏗️';
+  const sprite   = getBuildingSprite(building.type);
 
   const hpColor = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
+  const spriteSize = r * 3;
 
   return (
     <View
       style={[
         styles.building,
-        {
+        sprite ? {
+          left:            cx - spriteSize / 2,
+          top:             cy - spriteSize * 0.75,
+          width:           spriteSize,
+          height:          spriteSize,
+          borderRadius:    0,
+          backgroundColor: 'transparent',
+          borderWidth:     0,
+        } : {
           left:            cx - r,
           top:             cy - r,
           width:           r * 2,
@@ -42,7 +53,11 @@ export default function BuildingView({ building, scaleX, scaleY }: Props) {
         },
       ]}
     >
-      <Text style={[styles.emoji, { fontSize: r * 0.9 }]}>{emoji}</Text>
+      {sprite ? (
+        <Image source={sprite} style={{ width: spriteSize, height: spriteSize, resizeMode: 'contain' }} />
+      ) : (
+        <Text style={[styles.emoji, { fontSize: r * 0.9 }]}>{emoji}</Text>
+      )}
 
       {/* HP bar — doubles as the decay indicator since decay is real HP damage */}
       <View style={[styles.hpWrap, { width: r * 2.2, left: -r * 0.1 }]}>
