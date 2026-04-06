@@ -125,7 +125,9 @@ export interface Projectile {
   targetId: string;     // what it's hitting
   speed: number;        // pixels per second
   color: string;        // projectile color
-  emoji?: string;       // optional emoji in center
+  emoji?: string;      // optional emoji in center
+  isPiercingArrow?: boolean; // special arrow that draws a long trail
+  angle?: number;       // direction angle for piercing arrow
 }
 
 // ── Card definitions (discriminated union) ────────────────────────────────────

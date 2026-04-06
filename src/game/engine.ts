@@ -348,10 +348,12 @@ function applySuper(
         const ny    = dirY / len;
         const range = superDef.radius ?? 150;
         const enemies = units.filter((u) => u.alive && u.team !== allyTeam);
+
+        // Apply damage to all enemies hit by the line
         for (const enemy of enemies) {
           const ex   = enemy.position.x - unit.position.x;
           const ey   = enemy.position.y - unit.position.y;
-          const proj = ex * nx + ey * ny;       // how far along the line
+          const proj = ex * nx + ey * ny;
           if (proj >= 0 && proj <= range) {
             const perpDist = Math.abs(ex * ny - ey * nx);
             if (perpDist < 20) {
@@ -359,6 +361,25 @@ function applySuper(
             }
           }
         }
+
+        // Create a long piercing arrow visual projectile
+        const arrowAngle = Math.atan2(dirY, dirX);
+        projectiles.push({
+          id: uid(),
+          team: unit.team,
+          from: { x: unit.position.x, y: unit.position.y },
+          to: {
+            x: unit.position.x + nx * range,
+            y: unit.position.y + ny * range,
+          },
+          progress: 0,
+          damage: 0,
+          targetId: '',
+          speed: 600,
+          color: '#39ff14',
+          isPiercingArrow: true,
+          angle: arrowAngle,
+        });
       }
       break;
     }
