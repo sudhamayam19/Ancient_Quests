@@ -267,10 +267,10 @@ export const CARD_POOL: CardDef[] = [
   },
   {
     id: 'princess_archer',
-    name: 'Princess Archer',
+    name: "Kiara's Arrow",
     cost: 4,
     emoji: '🏹',
-    color: '#e91e8c',
+    color: '#ff6eb4',
     category: 'unit',
     unitStats: {
       type: 'princess_archer',
@@ -283,7 +283,7 @@ export const CARD_POOL: CardDef[] = [
       chargeTime: 10,
       potency: 350,
       radius: 150,
-      description: 'Fires a piercing arrow that passes through all enemies in a line',
+      description: 'Fires a piercing arrow that devastates all enemies in its path',
     },
   },
 ];

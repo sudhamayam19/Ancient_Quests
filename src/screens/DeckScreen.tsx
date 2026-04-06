@@ -29,6 +29,7 @@ function CardModal({ card, onClose }: { card: CardDef; onClose: () => void }) {
     rage:            '😤 Rage',
     chain_lightning: '⚡ Chain Lightning',
     summon_minion:   '👤 Summon Minion',
+    piercing_arrow:  '🏹 Piercing Arrow',
   };
 
   return (
@@ -74,6 +75,7 @@ function CardModal({ card, onClose }: { card: CardDef; onClose: () => void }) {
                     {superDef.type === 'rage'         && `Boosts all nearby ally damage by ${superDef.potency}% for ${superDef.duration}s.`}
                     {superDef.type === 'chain_lightning' && 'Damages target then chains to 2 nearest enemies.'}
                     {superDef.type === 'summon_minion'   && 'Spawns a weak clone of self nearby.'}
+                    {superDef.type === 'piercing_arrow'  && (superDef.description ?? 'Fires a piercing arrow that devastates all enemies in its path.')}
                   </Text>
                 </View>
               </View>
