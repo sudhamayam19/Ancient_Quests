@@ -195,19 +195,19 @@ export default function Arena({
       {/* ── Entities (back → front), all non-interactive ── */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {gameState.spells.map((spell) => (
-          <SpellView key={spell.id} spell={spell} scaleX={scaleX} scaleY={scaleY} />
+          <SpellView key={`s_${spell.id}`} spell={spell} scaleX={scaleX} scaleY={scaleY} />
         ))}
         {gameState.buildings.map((b) => (
-          <BuildingView key={b.id} building={b} scaleX={scaleX} scaleY={scaleY} />
+          <BuildingView key={`b_${b.id}`} building={b} scaleX={scaleX} scaleY={scaleY} />
         ))}
         {gameState.towers.map((tower) => (
-          <TowerView key={tower.id} tower={tower} scaleX={scaleX} scaleY={scaleY} />
+          <TowerView key={`t_${tower.id}`} tower={tower} scaleX={scaleX} scaleY={scaleY} />
         ))}
         {gameState.units.map((unit) => (
-          <UnitView key={unit.id} unit={unit} scaleX={scaleX} scaleY={scaleY} />
+          <UnitView key={`u_${unit.id}`} unit={unit} scaleX={scaleX} scaleY={scaleY} />
         ))}
         {gameState.projectiles.map((proj) => (
-          <ProjectileView key={proj.id} projectile={proj} scaleX={scaleX} scaleY={scaleY} />
+          <ProjectileView key={`p_${proj.id}`} projectile={proj} scaleX={scaleX} scaleY={scaleY} />
         ))}
       </View>
 

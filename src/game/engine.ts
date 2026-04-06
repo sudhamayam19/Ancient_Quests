@@ -36,7 +36,7 @@ import {
 } from '../constants';
 
 let _counter = 0;
-const uid = () => `e_${_counter++}`;
+const uid = () => `e_${_counter++}_${Math.random().toString(36).slice(2, 6)}`;
 
 // Decay damage per second — applied to buildings that have a finite decayTime
 const DECAY_DPS = 18;
