@@ -101,6 +101,25 @@ function moveTowards(pos: Position, target: Position, speed: number, dt: number)
   return { x: pos.x + (target.x - pos.x) * t, y: pos.y + (target.y - pos.y) * t };
 }
 
+// Bridge waypoint routing: units must cross the river through left or right bridge lane
+const RIVER_BAND = 18; // px tolerance for "at river"
+
+function getBridgeWaypoint(unitPos: Position, targetPos: Position): Position | null {
+  const unitOnBottom  = unitPos.y  > RIVER_Y + RIVER_BAND;
+  const unitOnTop     = unitPos.y  < RIVER_Y - RIVER_BAND;
+  const targetOnBottom = targetPos.y > RIVER_Y + RIVER_BAND;
+  const targetOnTop    = targetPos.y < RIVER_Y - RIVER_BAND;
+
+  // Needs to cross river
+  if ((unitOnBottom && targetOnTop) || (unitOnTop && targetOnBottom)) {
+    const dLeft  = Math.abs(unitPos.x - LEFT_LANE_X);
+    const dRight = Math.abs(unitPos.x - RIGHT_LANE_X);
+    const bx = dLeft <= dRight ? LEFT_LANE_X : RIGHT_LANE_X;
+    return { x: bx, y: RIVER_Y };
+  }
+  return null;
+}
+
 function clampToArena(pos: Position): Position {
   return {
     x: Math.max(UNIT_RADIUS, Math.min(ARENA_WIDTH  - UNIT_RADIUS, pos.x)),
@@ -269,6 +288,8 @@ export function stepGame(state: GameState, dt: number, now: number): GameState {
     }
   }
   units.push(...newUnitsFromBuildings);
+  // Cap total units to keep frame budget manageable
+  if (units.length > 40) units = units.slice(units.length - 40);
 
   // Ranged threshold: units with attackRange > this fire projectiles
   const RANGED_THRESHOLD = 45;
@@ -435,7 +456,10 @@ function applySuper(
     const attackReach = unit.attackRange + TOWER_RADIUS;
 
     if (d > attackReach) {
-      unit.position = clampToArena(moveTowards(unit.position, target.pos, effectiveSpeed, dt));
+      // Route through bridge if crossing river
+      const waypoint = getBridgeWaypoint(unit.position, target.pos);
+      const moveTarget = waypoint ?? target.pos;
+      unit.position = clampToArena(moveTowards(unit.position, moveTarget, effectiveSpeed, dt));
       unit.targetId = target.id;
     } else {
       unit.targetId = target.id;
@@ -505,6 +529,8 @@ function applySuper(
     }
   }
   projectiles = projectiles.filter((p) => !hitProjectiles.has(p.id));
+  // Cap projectile count to prevent runaway accumulation
+  if (projectiles.length > 80) projectiles = projectiles.slice(projectiles.length - 80);
 
   // ── Tower defense (DPS model) ─────────────────────────────────────────────
   for (const tower of towers) {

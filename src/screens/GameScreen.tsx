@@ -31,20 +31,26 @@ export default function GameScreen() {
   const nextCardQ = useRef<CardId>(getRandomCard());
 
   const tick = useCallback((now: number) => {
-    if (lastTime.current === null) lastTime.current = now;
-    const dt = Math.min((now - lastTime.current) / 1000, 0.1);
-    lastTime.current = now;
+    try {
+      if (lastTime.current === null) lastTime.current = now;
+      const dt = Math.min((now - lastTime.current) / 1000, 0.1);
+      lastTime.current = now;
 
-    let state = stateRef.current;
-    if (state.phase === 'playing') {
-      state = stepGame(state, dt, now);
-      const { state: s2, ai: newAI } = enemyAI(state, aiState.current, now);
-      state     = s2;
-      aiState.current = newAI;
-      setGameState(state);
-    }
+      let state = stateRef.current;
+      if (state.phase === 'playing') {
+        state = stepGame(state, dt, now);
+        const { state: s2, ai: newAI } = enemyAI(state, aiState.current, now);
+        state     = s2;
+        aiState.current = newAI;
+        setGameState(state);
+      }
 
-    if (state.phase === 'playing') {
+      if (state.phase === 'playing') {
+        rafId.current = requestAnimationFrame(tick);
+      }
+    } catch (e) {
+      // Restart the loop even if a single frame throws
+      console.warn('tick error', e);
       rafId.current = requestAnimationFrame(tick);
     }
   }, []);
