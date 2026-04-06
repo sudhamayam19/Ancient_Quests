@@ -96,24 +96,28 @@ export default function GameScreen() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerSide}>
-          <Text style={styles.playerLabel}>👤 You</Text>
-          <Text style={styles.crowns}>
-            {'👑'.repeat(playerCrowns)}{'⬛'.repeat(3 - playerCrowns)}
-          </Text>
+          <Text style={styles.playerLabel}>YOU</Text>
+          <View style={styles.crownRow}>
+            {[0,1,2].map((i) => (
+              <Text key={i} style={[styles.crownIcon, i < playerCrowns && styles.crownActive]}>👑</Text>
+            ))}
+          </View>
         </View>
 
-        <View style={styles.timerBox}>
-          <Text style={styles.timerText}>{timerStr}</Text>
+        <View style={[styles.timerBox, gameState.timeLeft <= 60 && styles.timerBoxUrgent]}>
+          <Text style={[styles.timerText, gameState.timeLeft <= 60 && styles.timerTextUrgent]}>{timerStr}</Text>
           {gameState.timeLeft <= 60 && (
-            <Text style={styles.overtimeLabel}>⚡ Overtime</Text>
+            <Text style={styles.overtimeLabel}>OVERTIME</Text>
           )}
         </View>
 
         <View style={[styles.headerSide, styles.headerRight]}>
-          <Text style={styles.playerLabel}>🤖 AI</Text>
-          <Text style={styles.crowns}>
-            {'👑'.repeat(enemyCrowns)}{'⬛'.repeat(3 - enemyCrowns)}
-          </Text>
+          <Text style={styles.playerLabel}>AI</Text>
+          <View style={styles.crownRow}>
+            {[0,1,2].map((i) => (
+              <Text key={i} style={[styles.crownIcon, i < enemyCrowns && styles.crownActive]}>👑</Text>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -159,13 +163,30 @@ export default function GameScreen() {
       {/* ── Game Over ── */}
       {gameState.phase === 'gameover' && (
         <View style={styles.overlay}>
-          <View style={styles.resultCard}>
+          <View style={[
+            styles.resultCard,
+            { borderColor: gameState.winner === 'player' ? '#f1c40f' : gameState.winner === 'enemy' ? '#e63946' : '#888' },
+          ]}>
             <Text style={styles.resultEmoji}>
               {gameState.winner === 'player' ? '🏆' : gameState.winner === 'enemy' ? '💀' : '🤝'}
             </Text>
-            <Text style={styles.resultTitle}>
-              {gameState.winner === 'player' ? 'Victory!' : gameState.winner === 'enemy' ? 'Defeat' : 'Draw'}
+            <Text style={[
+              styles.resultTitle,
+              { color: gameState.winner === 'player' ? '#f1c40f' : gameState.winner === 'enemy' ? '#e63946' : '#aaa' },
+            ]}>
+              {gameState.winner === 'player' ? 'VICTORY!' : gameState.winner === 'enemy' ? 'DEFEAT' : 'DRAW'}
             </Text>
+            <View style={styles.resultCrownsRow}>
+              <View style={styles.resultCrowns}>
+                <Text style={styles.resultCrownLabel}>YOU</Text>
+                <Text style={styles.resultCrownNum}>{playerCrowns} 👑</Text>
+              </View>
+              <Text style={styles.resultVs}>VS</Text>
+              <View style={styles.resultCrowns}>
+                <Text style={styles.resultCrownLabel}>AI</Text>
+                <Text style={styles.resultCrownNum}>{enemyCrowns} 👑</Text>
+              </View>
+            </View>
             <Text style={styles.resultSub}>
               {gameState.winner === 'player'
                 ? 'The ancients bow to you!'
@@ -173,8 +194,8 @@ export default function GameScreen() {
                 ? 'The AI crushed your forces.'
                 : 'An honourable stalemate.'}
             </Text>
-            <TouchableOpacity style={styles.restartBtn} onPress={handleRestart}>
-              <Text style={styles.restartText}>⚔️ Battle Again</Text>
+            <TouchableOpacity style={styles.restartBtn} onPress={handleRestart} activeOpacity={0.85}>
+              <Text style={styles.restartText}>⚔️  BATTLE AGAIN</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -184,57 +205,74 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0a0a1a' },
+  root: { flex: 1, backgroundColor: '#07071a' },
   header: {
     height: 56, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', paddingHorizontal: 12,
-    backgroundColor: '#111', borderBottomWidth: 1, borderBottomColor: '#222',
+    justifyContent: 'space-between', paddingHorizontal: 14,
+    backgroundColor: '#0e0e22', borderBottomWidth: 1, borderBottomColor: '#1a1a2e',
   },
-  headerSide: { alignItems: 'flex-start', gap: 2, flex: 1 },
+  headerSide: { alignItems: 'flex-start', gap: 3, flex: 1 },
   headerRight: { alignItems: 'flex-end' },
-  playerLabel: { color: '#aaa', fontSize: 12, fontWeight: '600' },
-  crowns: { fontSize: 13, letterSpacing: 2 },
+  playerLabel: { color: '#555', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  crownRow: { flexDirection: 'row', gap: 2 },
+  crownIcon: { fontSize: 14, opacity: 0.2 },
+  crownActive: { opacity: 1 },
   timerBox: {
-    alignItems: 'center', backgroundColor: '#1a1a2e',
-    paddingHorizontal: 14, paddingVertical: 4,
-    borderRadius: 10, borderWidth: 1, borderColor: '#3a86ff',
+    alignItems: 'center', backgroundColor: '#111428',
+    paddingHorizontal: 16, paddingVertical: 5,
+    borderRadius: 12, borderWidth: 1, borderColor: '#3a86ff55',
   },
+  timerBoxUrgent: { borderColor: '#e63946', backgroundColor: '#2a0a0a' },
   timerText: { color: '#fff', fontSize: 20, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  overtimeLabel: { color: '#f39c12', fontSize: 9, fontWeight: '700' },
+  timerTextUrgent: { color: '#e63946' },
+  overtimeLabel: { color: '#e63946', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   footer: {
-    height: 160, backgroundColor: '#111',
-    borderTopWidth: 1, borderTopColor: '#222',
+    height: 160, backgroundColor: '#0e0e22',
+    borderTopWidth: 1, borderTopColor: '#1a1a2e',
     paddingTop: 8, gap: 6,
   },
   handWrap: { flex: 1 },
   hintRow: {
     position: 'absolute', bottom: 6, left: 10, right: 10,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#3a86ff33',
   },
-  hintText: { color: '#ccc', fontSize: 11, fontWeight: '600' },
+  hintText: { color: '#aaa', fontSize: 12, fontWeight: '600' },
   cancelBtn: {
-    backgroundColor: '#e63946', width: 24, height: 24,
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#e63946', width: 26, height: 26,
+    borderRadius: 13, alignItems: 'center', justifyContent: 'center',
   },
   cancelText: { color: '#fff', fontSize: 12, fontWeight: '900' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    backgroundColor: 'rgba(0,0,0,0.82)',
     alignItems: 'center', justifyContent: 'center', zIndex: 100,
   },
   resultCard: {
-    backgroundColor: '#1a1a2e', borderRadius: 20,
-    padding: 32, alignItems: 'center', gap: 12,
-    borderWidth: 2, borderColor: '#3a86ff', minWidth: 260,
+    backgroundColor: '#0e0e22', borderRadius: 24,
+    padding: 32, alignItems: 'center', gap: 14,
+    borderWidth: 2, minWidth: 280,
   },
-  resultEmoji: { fontSize: 64 },
-  resultTitle: { color: '#fff', fontSize: 32, fontWeight: '900' },
-  resultSub:   { color: '#aaa', fontSize: 15, textAlign: 'center' },
-  restartBtn:  {
-    marginTop: 8, backgroundColor: '#3a86ff',
-    paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14,
+  resultEmoji: { fontSize: 70 },
+  resultTitle: { fontSize: 36, fontWeight: '900', letterSpacing: 3 },
+  resultCrownsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 20,
+    backgroundColor: '#111428', borderRadius: 14,
+    paddingHorizontal: 24, paddingVertical: 12,
   },
-  restartText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  resultCrowns: { alignItems: 'center', gap: 4 },
+  resultCrownLabel: { color: '#555', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  resultCrownNum: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  resultVs: { color: '#333', fontSize: 14, fontWeight: '900' },
+  resultSub: { color: '#666', fontSize: 14, textAlign: 'center' },
+  restartBtn: {
+    marginTop: 4, backgroundColor: '#3a86ff',
+    paddingHorizontal: 36, paddingVertical: 16, borderRadius: 16,
+    shadowColor: '#3a86ff', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
+    borderWidth: 1, borderColor: '#6ab0ff',
+  },
+  restartText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
 });
