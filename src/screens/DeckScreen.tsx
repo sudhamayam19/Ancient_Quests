@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
-import { CardDef, CardId } from '../types';
+import { CardDef, CardId, RARITY_COLOR, RARITY_LABEL } from '../types';
 import { CARD_POOL } from '../constants';
 import { StatPill } from '../components/shared/CardComponents';
 import { getUnitSprite, getBuildingSprite } from '../constants/sprites';
@@ -22,61 +22,83 @@ function getCardSprite(card: CardDef) {
   return null;
 }
 
+const SUPER_LABEL: Record<string, string> = {
+  heal_ally:       '💚 Heal Ally',
+  shield:          '🛡️ Shield',
+  rage:            '😤 Rage',
+  chain_lightning: '⚡ Chain Lightning',
+  summon_minion:   '👤 Summon Minion',
+  piercing_arrow:  '🏹 Piercing Arrow',
+};
+
+function RarityBadge({ rarity }: { rarity: CardDef['rarity'] }) {
+  const color = RARITY_COLOR[rarity];
+  return (
+    <View style={[styles.rarityBadge, { backgroundColor: color + '22', borderColor: color }]}>
+      <Text style={[styles.rarityText, { color }]}>{RARITY_LABEL[rarity]}</Text>
+    </View>
+  );
+}
+
 function CardModal({ card, onClose }: { card: CardDef; onClose: () => void }) {
   const isUnit  = card.category === 'unit';
   const isSpell = card.category === 'spell';
   const isBuild = card.category === 'building';
   const superDef = isUnit ? (card as any).super : null;
   const sprite = getCardSprite(card);
-
-  const superLabel: Record<string, string> = {
-    heal_ally:       '💚 Heal Ally',
-    shield:          '🛡️ Shield',
-    rage:            '😤 Rage',
-    chain_lightning: '⚡ Chain Lightning',
-    summon_minion:   '👤 Summon Minion',
-    piercing_arrow:  '🏹 Piercing Arrow',
-  };
+  const rarityColor = RARITY_COLOR[card.rarity];
 
   return (
-    <Modal visible animationType="slide" transparent>
+    <Modal visible animationType="fade" transparent>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalCard, { borderColor: card.color }]}>
-          {/* Header */}
-          <View style={[styles.modalHeader, { backgroundColor: card.color + '22' }]}>
-            <View style={styles.modalHeroWrap}>
-              {sprite ? (
-                <Image source={sprite} style={styles.modalSprite} resizeMode="contain" />
-              ) : (
-                <View style={[styles.modalEmoji, { backgroundColor: card.color + '33', borderColor: card.color }]}>
-                  <Text style={styles.modalEmojiText}>{card.emoji}</Text>
-                </View>
-              )}
-            </View>
+        <View style={[styles.modalCard, { borderColor: rarityColor }]}>
+
+          {/* Rarity strip at top */}
+          <View style={[styles.rarityStrip, { backgroundColor: rarityColor }]}>
+            <Text style={styles.rarityStripText}>{RARITY_LABEL[card.rarity]}</Text>
+          </View>
+
+          {/* Hero art */}
+          <View style={[styles.modalHero, { backgroundColor: card.color + '18' }]}>
+            {sprite ? (
+              <Image source={sprite} style={styles.modalSprite} resizeMode="contain" />
+            ) : (
+              <Text style={styles.modalEmojiText}>{card.emoji}</Text>
+            )}
+          </View>
+
+          {/* Name + cost + category */}
+          <View style={styles.modalTitleSection}>
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalName}>{card.name}</Text>
-              <View style={[styles.modalCostBadge, { backgroundColor: '#000a', borderColor: card.color }]}>
+              <View style={[styles.modalCostBadge, { backgroundColor: '#1a1a2e', borderColor: rarityColor }]}>
                 <Text style={styles.modalCostText}>⚡ {card.cost}</Text>
               </View>
             </View>
-            <Text style={[styles.modalCategory, { color: card.color }]}>{card.category.toUpperCase()}</Text>
+            <View style={styles.modalMetaRow}>
+              <Text style={[styles.modalCategory, { color: card.color }]}>
+                {card.category.toUpperCase()}
+              </Text>
+              <RarityBadge rarity={card.rarity} />
+            </View>
           </View>
 
-          <ScrollView style={styles.modalStats} contentContainerStyle={{ gap: 16 }}>
+          <ScrollView style={styles.modalBody} contentContainerStyle={{ gap: 14, paddingBottom: 8 }}>
+            {/* Super ability */}
             {superDef && (
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>⭐ SUPER ABILITY</Text>
-                <View style={styles.superBox}>
-                  <Text style={styles.superTypeLabel}>{superLabel[superDef.type] ?? superDef.type}</Text>
-                  <View style={styles.superMeta}>
-                    <StatPill label="Charge" value={`${superDef.chargeTime}s`} color="#f1c40f" />
-                    {superDef.radius   && <StatPill label="Radius"   value={`${superDef.radius}px`} color="#3498db" />}
-                    {superDef.potency  && <StatPill label="Potency"  value={superDef.potency}        color="#e74c3c" />}
+                <Text style={styles.sectionLabel}>⭐ SUPER ABILITY</Text>
+                <View style={[styles.superBox, { borderColor: '#f1c40f44' }]}>
+                  <Text style={styles.superTypeLabel}>{SUPER_LABEL[superDef.type] ?? superDef.type}</Text>
+                  <View style={styles.pillRow}>
+                    <StatPill label="Charge"   value={`${superDef.chargeTime}s`} color="#f1c40f" />
+                    {superDef.radius   && <StatPill label="Radius"   value={`${superDef.radius}px`}  color="#3498db" />}
+                    {superDef.potency  && superDef.potency < 9999 && <StatPill label="Potency"  value={superDef.potency}         color="#e74c3c" />}
                     {superDef.duration && <StatPill label="Duration" value={`${superDef.duration}s`} color="#9b59b6" />}
                   </View>
                   <Text style={styles.superDesc}>
                     {superDef.type === 'heal_ally'       && 'Fully heals the most wounded ally unit in range.'}
-                    {superDef.type === 'shield'          && 'Grants a shield absorbing damage.'}
+                    {superDef.type === 'shield'          && 'Grants a shield that absorbs incoming damage.'}
                     {superDef.type === 'rage'            && `Boosts all nearby ally damage by ${superDef.potency}% for ${superDef.duration}s.`}
                     {superDef.type === 'chain_lightning' && 'Damages target then chains to 2 nearest enemies.'}
                     {superDef.type === 'summon_minion'   && 'Spawns a weak clone of self nearby.'}
@@ -86,60 +108,101 @@ function CardModal({ card, onClose }: { card: CardDef; onClose: () => void }) {
               </View>
             )}
 
+            {/* Unit combat stats */}
             {isUnit && (card as any).unitStats && (
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>⚔️ COMBAT STATS</Text>
-                <View style={styles.statRow}>
-                  <StatPill label="HP"     value={(card as any).unitStats.maxHp}                  color="#2ecc71" />
-                  <StatPill label="Damage" value={(card as any).unitStats.damage}                 color="#e74c3c" />
-                  <StatPill label="Speed"  value={(card as any).unitStats.speed}                  color="#3498db" />
-                </View>
-                <View style={styles.statRow}>
-                  <StatPill label="Range"  value={(card as any).unitStats.attackRange}            color="#9b59b6" />
-                  <StatPill label="ATK/s"  value={(card as any).unitStats.attackSpeed.toFixed(2)} color="#e67e22" />
+                <Text style={styles.sectionLabel}>⚔️ COMBAT STATS</Text>
+                <View style={styles.statsGrid}>
+                  <View style={[styles.statBlock, { borderColor: '#2ecc7144' }]}>
+                    <Text style={[styles.statVal, { color: '#2ecc71' }]}>{(card as any).unitStats.maxHp}</Text>
+                    <Text style={styles.statKey}>HP</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#e74c3c44' }]}>
+                    <Text style={[styles.statVal, { color: '#e74c3c' }]}>{(card as any).unitStats.damage}</Text>
+                    <Text style={styles.statKey}>DMG</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#3498db44' }]}>
+                    <Text style={[styles.statVal, { color: '#3498db' }]}>{(card as any).unitStats.speed}</Text>
+                    <Text style={styles.statKey}>SPD</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#9b59b644' }]}>
+                    <Text style={[styles.statVal, { color: '#9b59b6' }]}>{(card as any).unitStats.attackRange}</Text>
+                    <Text style={styles.statKey}>RNG</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#e67e2244' }]}>
+                    <Text style={[styles.statVal, { color: '#e67e22' }]}>{(card as any).unitStats.attackSpeed.toFixed(2)}</Text>
+                    <Text style={styles.statKey}>ATK/S</Text>
+                  </View>
                 </View>
               </View>
             )}
 
+            {/* Spell stats */}
             {isSpell && (
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>✨ SPELL STATS</Text>
-                <View style={styles.statRow}>
-                  <StatPill label="Radius"    value={`${card.radius}px`}   color="#e67e22" />
-                  <StatPill label="Total DMG" value={card.totalDamage}     color="#e74c3c" />
-                  <StatPill label="Duration"  value={`${card.duration}s`}  color="#3498db" />
+                <Text style={styles.sectionLabel}>✨ SPELL STATS</Text>
+                <View style={styles.statsGrid}>
+                  <View style={[styles.statBlock, { borderColor: '#e67e2244' }]}>
+                    <Text style={[styles.statVal, { color: '#e67e22' }]}>{card.radius}</Text>
+                    <Text style={styles.statKey}>RADIUS</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#e74c3c44' }]}>
+                    <Text style={[styles.statVal, { color: '#e74c3c' }]}>{card.totalDamage}</Text>
+                    <Text style={styles.statKey}>DAMAGE</Text>
+                  </View>
+                  <View style={[styles.statBlock, { borderColor: '#3498db44' }]}>
+                    <Text style={[styles.statVal, { color: '#3498db' }]}>{card.duration}s</Text>
+                    <Text style={styles.statKey}>DURATION</Text>
+                  </View>
+                  {card.slowDuration > 0 && (
+                    <View style={[styles.statBlock, { borderColor: '#9b59b644' }]}>
+                      <Text style={[styles.statVal, { color: '#9b59b6' }]}>{card.slowDuration}s</Text>
+                      <Text style={styles.statKey}>SLOW</Text>
+                    </View>
+                  )}
                 </View>
-                {card.slowDuration > 0 && (
-                  <StatPill label="Slow" value={`${card.slowDuration}s`} color="#9b59b6" />
-                )}
               </View>
             )}
 
+            {/* Building stats */}
             {isBuild && (
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>🏗️ BUILDING STATS</Text>
-                <View style={styles.statRow}>
-                  <StatPill label="HP"    value={card.hp}           color="#2ecc71" />
-                  {card.dps > 0         && <StatPill label="DPS"   value={card.dps}           color="#e74c3c" />}
-                  {card.attackRange > 0 && <StatPill label="Range" value={card.attackRange}   color="#9b59b6" />}
+                <Text style={styles.sectionLabel}>🏗️ BUILDING STATS</Text>
+                <View style={styles.statsGrid}>
+                  <View style={[styles.statBlock, { borderColor: '#2ecc7144' }]}>
+                    <Text style={[styles.statVal, { color: '#2ecc71' }]}>{card.hp}</Text>
+                    <Text style={styles.statKey}>HP</Text>
+                  </View>
+                  {card.dps > 0 && (
+                    <View style={[styles.statBlock, { borderColor: '#e74c3c44' }]}>
+                      <Text style={[styles.statVal, { color: '#e74c3c' }]}>{card.dps}</Text>
+                      <Text style={styles.statKey}>DPS</Text>
+                    </View>
+                  )}
+                  {card.attackRange > 0 && (
+                    <View style={[styles.statBlock, { borderColor: '#9b59b644' }]}>
+                      <Text style={[styles.statVal, { color: '#9b59b6' }]}>{card.attackRange}</Text>
+                      <Text style={styles.statKey}>RANGE</Text>
+                    </View>
+                  )}
+                  {card.decayTime > 0 && (
+                    <View style={[styles.statBlock, { borderColor: '#f39c1244' }]}>
+                      <Text style={[styles.statVal, { color: '#f39c12' }]}>{card.decayTime}s</Text>
+                      <Text style={styles.statKey}>DECAY</Text>
+                    </View>
+                  )}
                 </View>
                 {card.spawnType && (
                   <View style={styles.spawnRow}>
-                    <Text style={styles.spawnLabel}>🏭 Spawns:</Text>
-                    <Text style={styles.spawnValue}>{card.spawnType.replace('_', ' ')}</Text>
-                  </View>
-                )}
-                {card.decayTime > 0 && (
-                  <View style={styles.spawnRow}>
-                    <Text style={styles.spawnLabel}>⏱ Decay:</Text>
-                    <Text style={[styles.spawnValue, { color: '#f39c12' }]}>{card.decayTime}s</Text>
+                    <Text style={styles.spawnLabel}>🏭 Spawns</Text>
+                    <Text style={styles.spawnValue}>{card.spawnType.replace('_', ' ')} every {(card as any).spawnInterval}s</Text>
                   </View>
                 )}
               </View>
             )}
           </ScrollView>
 
-          <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: card.color }]} onPress={onClose}>
+          <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: rarityColor }]} onPress={onClose}>
             <Text style={styles.modalCloseText}>✕  CLOSE</Text>
           </TouchableOpacity>
         </View>
@@ -150,13 +213,16 @@ function CardModal({ card, onClose }: { card: CardDef; onClose: () => void }) {
 
 function CollectionCard({ card, onPress, inDeck }: { card: CardDef; onPress: () => void; inDeck: boolean }) {
   const sprite = getCardSprite(card);
+  const rarityColor = RARITY_COLOR[card.rarity];
   return (
     <TouchableOpacity
-      style={[styles.collCard, inDeck && styles.collCardInDeck, { borderColor: inDeck ? card.color : '#2a2a4a' }]}
+      style={[styles.collCard, { borderColor: inDeck ? rarityColor : '#2a2a4a' }]}
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <View style={[styles.collCardArt, { backgroundColor: card.color + '22' }]}>
+      {/* Rarity bar at top */}
+      <View style={[styles.collRarityBar, { backgroundColor: rarityColor }]} />
+      <View style={[styles.collCardArt, { backgroundColor: card.color + '18' }]}>
         {sprite ? (
           <Image source={sprite} style={styles.collSprite} resizeMode="contain" />
         ) : (
@@ -167,8 +233,9 @@ function CollectionCard({ card, onPress, inDeck }: { card: CardDef; onPress: () 
         </View>
       </View>
       <Text style={styles.collName} numberOfLines={2}>{card.name}</Text>
+      <Text style={[styles.collRarity, { color: rarityColor }]}>{RARITY_LABEL[card.rarity]}</Text>
       {inDeck && (
-        <View style={[styles.inDeckBadge, { backgroundColor: card.color }]}>
+        <View style={[styles.inDeckBadge, { backgroundColor: rarityColor }]}>
           <Text style={styles.inDeckText}>✓</Text>
         </View>
       )}
@@ -219,7 +286,7 @@ export default function DeckScreen({ deck, onDeckChange }: Props) {
             <View style={styles.deckHeaderRow}>
               <Text style={styles.sectionTitle}>Battle Deck</Text>
               <View style={styles.avgBadge}>
-                <Text style={styles.avgText}>⚡ {avgCost()} avg cost</Text>
+                <Text style={styles.avgText}>⚡ {avgCost()} avg</Text>
               </View>
             </View>
             <Text style={styles.sectionSub}>Tap a slot to swap a card</Text>
@@ -229,14 +296,16 @@ export default function DeckScreen({ deck, onDeckChange }: Props) {
                 const card = CARD_POOL.find((c) => c.id === cardId)!;
                 const sprite = getCardSprite(card);
                 const isActive = pendingSwap === i;
+                const rarityColor = RARITY_COLOR[card.rarity];
                 return (
                   <TouchableOpacity
                     key={i}
-                    style={[styles.deckSlot, { borderColor: isActive ? '#3a86ff' : card.color + '88' }, isActive && styles.deckSlotActive]}
+                    style={[styles.deckSlot, { borderColor: isActive ? '#fff' : rarityColor }, isActive && styles.deckSlotActive]}
                     onPress={() => handleDeckCardPress(i)}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.deckArt, { backgroundColor: card.color + '22' }]}>
+                    <View style={[styles.collRarityBar, { backgroundColor: rarityColor }]} />
+                    <View style={[styles.deckArt, { backgroundColor: card.color + '18' }]}>
                       {sprite ? (
                         <Image source={sprite} style={styles.deckSprite} resizeMode="contain" />
                       ) : (
@@ -244,7 +313,7 @@ export default function DeckScreen({ deck, onDeckChange }: Props) {
                       )}
                     </View>
                     <Text style={styles.deckName} numberOfLines={1}>{card.name.split(' ').pop()}</Text>
-                    <View style={[styles.deckCostBadge, { backgroundColor: card.color }]}>
+                    <View style={[styles.deckCostBadge, { backgroundColor: rarityColor }]}>
                       <Text style={styles.deckCostText}>{card.cost}</Text>
                     </View>
                   </TouchableOpacity>
@@ -329,31 +398,29 @@ const styles = StyleSheet.create({
   },
   avgText: { color: '#3a86ff', fontSize: 11, fontWeight: '800' },
   sectionSub: { color: '#444', fontSize: 12, marginTop: -8 },
-  deckGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center',
-  },
+  deckGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   deckSlot: {
-    width: 76, alignItems: 'center', gap: 4,
+    width: 76, alignItems: 'center',
     backgroundColor: '#111428', borderRadius: 12,
-    borderWidth: 1.5, padding: 6, overflow: 'hidden',
+    borderWidth: 1.5, overflow: 'hidden',
   },
   deckSlotActive: { backgroundColor: '#0d1f3e' },
   deckArt: {
-    width: 64, height: 64, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    width: 76, height: 64,
+    alignItems: 'center', justifyContent: 'center',
   },
   deckSprite: { width: 64, height: 64 },
   deckEmoji: { fontSize: 30 },
-  deckName: { color: '#ccc', fontSize: 9, fontWeight: '700', textAlign: 'center' },
+  deckName: { color: '#ccc', fontSize: 9, fontWeight: '700', textAlign: 'center', paddingVertical: 4 },
   deckCostBadge: {
-    position: 'absolute', top: 4, right: 4,
+    position: 'absolute', top: 6, right: 5,
     width: 18, height: 18, borderRadius: 9,
     alignItems: 'center', justifyContent: 'center',
   },
   deckCostText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 4 },
 
-  // Collection tab
+  // Collection
   collContent: { padding: 12, gap: 4, paddingBottom: 24 },
   swapBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -363,17 +430,13 @@ const styles = StyleSheet.create({
   swapText: { color: '#3a86ff', fontSize: 12, fontWeight: '700' },
   cancelText: { color: '#e63946', fontSize: 12, fontWeight: '700' },
   catTitle: { color: '#555', fontSize: 11, fontWeight: '900', letterSpacing: 2, marginTop: 16, marginBottom: 8 },
-  collGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 10,
-  },
+  collGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   collCard: {
     width: 90, borderRadius: 12, overflow: 'hidden',
     backgroundColor: '#111428', borderWidth: 1.5,
   },
-  collCardInDeck: { backgroundColor: '#0d1e2e' },
-  collCardArt: {
-    height: 80, alignItems: 'center', justifyContent: 'center',
-  },
+  collRarityBar: { height: 3, width: '100%' },
+  collCardArt: { height: 80, alignItems: 'center', justifyContent: 'center' },
   collSprite: { width: 78, height: 78 },
   collEmoji: { fontSize: 34 },
   collCost: {
@@ -381,56 +444,74 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5,
   },
   collCostText: { color: '#fff', fontSize: 10, fontWeight: '900' },
-  collName: {
-    color: '#ccc', fontSize: 10, fontWeight: '700',
-    textAlign: 'center', padding: 6, paddingTop: 4,
-  },
+  collName: { color: '#ccc', fontSize: 10, fontWeight: '700', textAlign: 'center', paddingHorizontal: 4, paddingTop: 4 },
+  collRarity: { fontSize: 8, fontWeight: '900', textAlign: 'center', paddingBottom: 6, letterSpacing: 1 },
   inDeckBadge: {
-    position: 'absolute', top: 4, left: 4,
+    position: 'absolute', top: 8, left: 4,
     width: 18, height: 18, borderRadius: 9,
     alignItems: 'center', justifyContent: 'center',
   },
   inDeckText: { color: '#fff', fontSize: 10, fontWeight: '900' },
 
+  // Rarity badge
+  rarityBadge: {
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 8, borderWidth: 1,
+  },
+  rarityText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+
   // Modal
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.88)',
-    alignItems: 'center', justifyContent: 'center', padding: 20,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.9)',
+    alignItems: 'center', justifyContent: 'center', padding: 16,
   },
   modalCard: {
     backgroundColor: '#0e0e22', borderRadius: 24,
-    borderWidth: 2, width: '100%', maxHeight: '88%', overflow: 'hidden',
+    borderWidth: 2, width: '100%', maxHeight: '92%', overflow: 'hidden',
   },
-  modalHeader: { padding: 20, alignItems: 'center', gap: 8 },
-  modalHeroWrap: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
-  modalSprite: { width: 100, height: 100 },
-  modalEmoji: {
-    width: 80, height: 80, borderRadius: 16,
-    borderWidth: 3, alignItems: 'center', justifyContent: 'center',
+  rarityStrip: { height: 4, width: '100%' },
+  rarityStripText: { display: 'none' },
+  modalHero: {
+    height: 160, alignItems: 'center', justifyContent: 'center',
   },
-  modalEmojiText: { fontSize: 44 },
-  modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  modalName: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  modalSprite: { width: 150, height: 150 },
+  modalEmojiText: { fontSize: 80 },
+  modalTitleSection: {
+    paddingHorizontal: 20, paddingBottom: 14, gap: 8,
+    borderBottomWidth: 1, borderBottomColor: '#1a1a2e',
+  },
+  modalTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modalName: { color: '#fff', fontSize: 22, fontWeight: '900', flex: 1 },
   modalCostBadge: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 8, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: 10, borderWidth: 1.5, marginLeft: 8,
   },
-  modalCostText: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  modalCategory: { fontSize: 11, letterSpacing: 2, fontWeight: '700' },
-  modalStats: { padding: 20, maxHeight: 300 },
+  modalCostText: { color: '#fff', fontSize: 15, fontWeight: '900' },
+  modalMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  modalCategory: { fontSize: 11, letterSpacing: 2, fontWeight: '800' },
+  modalBody: { padding: 16, maxHeight: 340 },
   modalSection: { gap: 10 },
-  modalSectionTitle: { color: '#555', fontSize: 11, fontWeight: '800', letterSpacing: 1.5 },
+  sectionLabel: { color: '#555', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
   superBox: {
-    backgroundColor: '#1a1a2e', borderRadius: 12, padding: 12, gap: 8,
-    borderWidth: 1, borderColor: '#f1c40f44',
+    backgroundColor: '#111428', borderRadius: 14, padding: 14, gap: 10,
+    borderWidth: 1,
   },
-  superTypeLabel: { color: '#f1c40f', fontSize: 16, fontWeight: '900' },
-  superMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  superDesc: { color: '#aaa', fontSize: 13, lineHeight: 18 },
-  statRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  spawnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  superTypeLabel: { color: '#f1c40f', fontSize: 17, fontWeight: '900' },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  superDesc: { color: '#888', fontSize: 13, lineHeight: 19 },
+  statsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+  },
+  statBlock: {
+    flex: 1, minWidth: 60, backgroundColor: '#111428',
+    borderRadius: 10, borderWidth: 1, padding: 10,
+    alignItems: 'center', gap: 3,
+  },
+  statVal: { fontSize: 20, fontWeight: '900' },
+  statKey: { color: '#555', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  spawnRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   spawnLabel: { color: '#888', fontSize: 12 },
   spawnValue: { color: '#fff', fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
-  modalCloseBtn: { padding: 16, alignItems: 'center' },
+  modalCloseBtn: { padding: 18, alignItems: 'center' },
   modalCloseText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 2 },
 });

@@ -16,7 +16,7 @@ import ElixirBar from '../components/ElixirBar';
 export default function GameScreen() {
   const { width, height } = useWindowDimensions();
   const HEADER_H = 56;
-  const FOOTER_H = 160;
+  const FOOTER_H = 185;
   const arenaH   = height - HEADER_H - FOOTER_H;
 
   const [gameState, setGameState]   = useState<GameState>(() => buildInitialState());
@@ -65,7 +65,8 @@ export default function GameScreen() {
     const state = stateRef.current;
     if (state.playerElixir < def.cost) return;
 
-    const newNext = getRandomCard();
+    const updatedHand = state.playerHand.filter((c) => c !== selectedCard);
+    const newNext = getRandomCard([...updatedHand, state.nextCard]);
     nextCardQ.current = newNext;
     setGameState((prev) => deployCard(prev, selectedCard, pos, 'player', newNext));
     setSelected(null);
@@ -227,9 +228,9 @@ const styles = StyleSheet.create({
   timerTextUrgent: { color: '#e63946' },
   overtimeLabel: { color: '#e63946', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   footer: {
-    height: 160, backgroundColor: '#0e0e22',
-    borderTopWidth: 1, borderTopColor: '#1a1a2e',
-    paddingTop: 8, gap: 6,
+    height: 185, backgroundColor: '#0a0a18',
+    borderTopWidth: 2, borderTopColor: '#1a1a3a',
+    paddingTop: 6, gap: 4,
   },
   handWrap: { flex: 1 },
   hintRow: {

@@ -1,4 +1,5 @@
 import { CardDef } from '../types';
+export { RARITY_COLOR, RARITY_LABEL } from '../types';
 
 export const ARENA_WIDTH  = 370;
 export const ARENA_HEIGHT = 620;
@@ -51,6 +52,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '𓂀',
     color: '#c9a84c',
     category: 'unit',
+    rarity: 'rare',
     unitStats: {
       type: 'pharaoh_guard',
       hp: 1400, maxHp: 1400,
@@ -70,6 +72,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🌪',
     color: '#d4a96a',
     category: 'unit',
+    rarity: 'common',
     unitStats: {
       type: 'sand_wraith',
       hp: 260, maxHp: 260,
@@ -91,6 +94,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🗿',
     color: '#7f8c8d',
     category: 'unit',
+    rarity: 'epic',
     unitStats: {
       type: 'stone_colossus',
       hp: 4200, maxHp: 4200,
@@ -110,6 +114,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🔮',
     color: '#5d6af5',
     category: 'unit',
+    rarity: 'epic',
     unitStats: {
       type: 'oracle',
       hp: 520, maxHp: 520,
@@ -130,6 +135,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🪓',
     color: '#e74c3c',
     category: 'unit',
+    rarity: 'common',
     unitStats: {
       type: 'berserker',
       hp: 900, maxHp: 900,
@@ -151,6 +157,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🌙',
     color: '#e91e8c',
     category: 'unit',
+    rarity: 'rare',
     unitStats: {
       type: 'blade_dancer',
       hp: 680, maxHp: 680,
@@ -170,6 +177,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🦴',
     color: '#27ae60',
     category: 'unit',
+    rarity: 'rare',
     unitStats: {
       type: 'shaman',
       hp: 780, maxHp: 780,
@@ -192,6 +200,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🏜️',
     color: '#e67e22',
     category: 'spell',
+    rarity: 'common',
     radius: 65,
     totalDamage: 450,
     duration: 2.0,
@@ -204,6 +213,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '⚡',
     color: '#f1c40f',
     category: 'spell',
+    rarity: 'rare',
     radius: 40,
     totalDamage: 850,
     duration: 0.5,
@@ -216,6 +226,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🌀',
     color: '#9b59b6',
     category: 'spell',
+    rarity: 'epic',
     radius: 82,
     totalDamage: 320,
     duration: 3.0,
@@ -230,6 +241,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🪬',
     color: '#bdc3c7',
     category: 'building',
+    rarity: 'rare',
     hp: 1800,
     attackRange: 100,
     dps: 95,
@@ -244,6 +256,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '⚰️',
     color: '#6c3483',
     category: 'building',
+    rarity: 'epic',
     hp: 900,
     attackRange: 0,
     dps: 0,
@@ -258,6 +271,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🔥',
     color: '#c0392b',
     category: 'building',
+    rarity: 'common',
     hp: 500,
     attackRange: 48,
     dps: 180,
@@ -272,6 +286,7 @@ export const CARD_POOL: CardDef[] = [
     emoji: '🏹',
     color: '#ff6eb4',
     category: 'unit',
+    rarity: 'legendary',
     unitStats: {
       type: 'princess_archer',
       hp: 620, maxHp: 620,

@@ -71,13 +71,21 @@ export function buildInitialState(): GameState {
 
 function shuffleDeck(): CardId[] {
   const ids = CARD_POOL.map((c) => c.id);
-  const deck: CardId[] = [];
-  while (deck.length < 16) deck.push(...ids);
+  // Build deck with each card appearing at most twice, then shuffle
+  const deck: CardId[] = [...ids, ...ids];
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
-  return deck;
+  // Ensure first 5 cards (initial hand + next) are all unique
+  const seen = new Set<CardId>();
+  const front: CardId[] = [];
+  const rest:  CardId[] = [];
+  for (const id of deck) {
+    if (front.length < 5 && !seen.has(id)) { seen.add(id); front.push(id); }
+    else rest.push(id);
+  }
+  return [...front, ...rest];
 }
 
 // ─── Math helpers ─────────────────────────────────────────────────────────────
@@ -644,8 +652,9 @@ export function deployCard(
   };
 }
 
-export function getRandomCard(): CardId {
-  const ids = CARD_POOL.map((c) => c.id);
+export function getRandomCard(exclude: CardId[] = []): CardId {
+  const ids = CARD_POOL.map((c) => c.id).filter((id) => !exclude.includes(id));
+  if (ids.length === 0) return CARD_POOL[Math.floor(Math.random() * CARD_POOL.length)].id;
   return ids[Math.floor(Math.random() * ids.length)];
 }
 

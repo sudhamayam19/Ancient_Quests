@@ -22,6 +22,23 @@ export interface SuperMeter {
   current: number;  // 0 to chargeTime
 }
 
+// ── Card rarities ─────────────────────────────────────────────────────────────
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export const RARITY_COLOR: Record<Rarity, string> = {
+  common:    '#95a5a6',
+  rare:      '#3498db',
+  epic:      '#9b59b6',
+  legendary: '#f39c12',
+};
+
+export const RARITY_LABEL: Record<Rarity, string> = {
+  common:    'COMMON',
+  rare:      'RARE',
+  epic:      'EPIC',
+  legendary: 'LEGENDARY',
+};
+
 // ── Card categories ────────────────────────────────────────────────────────────
 export type CardCategory = 'unit' | 'spell' | 'building';
 
@@ -138,6 +155,7 @@ interface BaseCardDef {
   emoji: string;
   color: string;
   category: CardCategory;
+  rarity: Rarity;
 }
 
 export interface UnitCardDef extends BaseCardDef {

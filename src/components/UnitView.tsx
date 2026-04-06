@@ -116,7 +116,7 @@ export default function UnitView({ unit, scaleX, scaleY }: Props) {
   const vy = visualYRef.current;
 
   // Sprite units are rendered larger; emoji units keep the circle
-  const spriteSize = r * 3.2;
+  const spriteSize = Math.max(48, r * 4.2);
 
   return (
     <Animated.View
