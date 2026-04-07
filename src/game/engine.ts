@@ -43,7 +43,7 @@ const DECAY_DPS = 18;
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
-export function buildInitialState(): GameState {
+export function buildInitialState(playerDeck?: CardId[]): GameState {
   const towers: Tower[] = [
     { id: 'pk', type: 'king',     team: 'player', hp: 4032, maxHp: 4032, position: PLAYER_KING_POS,        alive: true },
     { id: 'pl', type: 'princess', team: 'player', hp: 3052, maxHp: 3052, position: PLAYER_LEFT_TOWER_POS,  alive: true },
@@ -52,7 +52,9 @@ export function buildInitialState(): GameState {
     { id: 'el', type: 'princess', team: 'enemy',  hp: 3052, maxHp: 3052, position: ENEMY_LEFT_TOWER_POS,   alive: true },
     { id: 'er', type: 'princess', team: 'enemy',  hp: 3052, maxHp: 3052, position: ENEMY_RIGHT_TOWER_POS,  alive: true },
   ];
-  const shuffled = shuffleDeck();
+  const shuffled = playerDeck && playerDeck.length >= 5
+    ? shufflePlayerDeck(playerDeck)
+    : shuffleDeck();
   return {
     phase: 'playing',
     towers,
@@ -67,6 +69,22 @@ export function buildInitialState(): GameState {
     nextCard: shuffled[4],
     winner: null,
   };
+}
+
+function shufflePlayerDeck(deck: CardId[]): CardId[] {
+  const doubled = [...deck, ...deck];
+  for (let i = doubled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [doubled[i], doubled[j]] = [doubled[j], doubled[i]];
+  }
+  const seen = new Set<CardId>();
+  const front: CardId[] = [];
+  const rest:  CardId[] = [];
+  for (const id of doubled) {
+    if (front.length < 5 && !seen.has(id)) { seen.add(id); front.push(id); }
+    else rest.push(id);
+  }
+  return [...front, ...rest];
 }
 
 function shuffleDeck(): CardId[] {
@@ -594,7 +612,8 @@ export function deployCard(
   cardId: CardId,
   position: Position,
   team: Team,
-  newNextCard?: CardId
+  newNextCard?: CardId,
+  cardLevel: number = 1,
 ): GameState {
   const cardDef = CARD_POOL.find((c) => c.id === cardId);
   if (!cardDef) return state;
@@ -607,11 +626,15 @@ export function deployCard(
 
   if (cardDef.category === 'unit') {
     const { type: _t, ...stats } = cardDef.unitStats;
+    const mult = 1 + (cardLevel - 1) * 0.08;
     const unit: Unit = {
       id: uid(),
       type: cardId as UnitType,
       team,
       ...stats,
+      hp:     Math.round(stats.hp * mult),
+      maxHp:  Math.round(stats.maxHp * mult),
+      damage: Math.round(stats.damage * mult),
       position,
       lastAttackTime: 0,
       targetId: null,

@@ -12,15 +12,25 @@ import { CARD_POOL } from '../constants';
 import Arena    from '../components/Arena';
 import CardHand from '../components/CardHand';
 import ElixirBar from '../components/ElixirBar';
+import { PlayerProfile } from '../types/progression';
+import { getCardLevel, statMultiplier } from '../utils/progression';
 
-export default function GameScreen() {
+interface Props {
+  deck: CardId[];
+  profile: PlayerProfile;
+  onBattleEnd: (won: boolean, crowns: number, destroyedEnemyKing: boolean) => void;
+  onExit: () => void;
+}
+
+export default function GameScreen({ deck, profile, onBattleEnd, onExit }: Props) {
   const { width, height } = useWindowDimensions();
   const HEADER_H = 56;
   const FOOTER_H = 185;
   const arenaH   = height - HEADER_H - FOOTER_H;
 
-  const [gameState, setGameState]   = useState<GameState>(() => buildInitialState());
+  const [gameState, setGameState]   = useState<GameState>(() => buildInitialState(deck));
   const [selectedCard, setSelected] = useState<CardId | null>(null);
+  const battleEndedRef = useRef(false);
 
   const stateRef  = useRef(gameState);
   stateRef.current = gameState;
@@ -71,22 +81,37 @@ export default function GameScreen() {
     const state = stateRef.current;
     if (state.playerElixir < def.cost) return;
 
+    const cardLevel = getCardLevel(profile, selectedCard);
     const updatedHand = state.playerHand.filter((c) => c !== selectedCard);
     const newNext = getRandomCard([...updatedHand, state.nextCard]);
     nextCardQ.current = newNext;
-    setGameState((prev) => deployCard(prev, selectedCard, pos, 'player', newNext));
+    setGameState((prev) => deployCard(prev, selectedCard, pos, 'player', newNext, cardLevel));
     setSelected(null);
-  }, [selectedCard]);
+  }, [selectedCard, profile]);
+
+  // Fire onBattleEnd once when game transitions to gameover
+  const prevPhaseRef = useRef<string>('playing');
+  useEffect(() => {
+    if (gameState.phase === 'gameover' && prevPhaseRef.current === 'playing' && !battleEndedRef.current) {
+      battleEndedRef.current = true;
+      const won = gameState.winner === 'player';
+      const crowns = gameState.towers.filter(t => t.team === 'enemy' && !t.alive).length;
+      const destroyedKing = gameState.towers.some(t => t.team === 'enemy' && t.type === 'king' && !t.alive);
+      onBattleEnd(won, crowns, destroyedKing);
+    }
+    prevPhaseRef.current = gameState.phase;
+  }, [gameState.phase, gameState.winner, gameState.towers]);
 
   const handleRestart = useCallback(() => {
     if (rafId.current !== null) cancelAnimationFrame(rafId.current);
     lastTime.current = null;
     aiState.current  = makeAIState();
-    const fresh = buildInitialState();
+    battleEndedRef.current = false;
+    const fresh = buildInitialState(deck);
     setGameState(fresh);
     setSelected(null);
     rafId.current = requestAnimationFrame(tick);
-  }, [tick]);
+  }, [tick, deck]);
 
   // Timer display
   const mins    = Math.floor(gameState.timeLeft / 60);
@@ -204,6 +229,9 @@ export default function GameScreen() {
             <TouchableOpacity style={styles.restartBtn} onPress={handleRestart} activeOpacity={0.85}>
               <Text style={styles.restartText}>⚔️  BATTLE AGAIN</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.exitBtn} onPress={onExit} activeOpacity={0.85}>
+              <Text style={styles.exitText}>← LOBBY</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -282,4 +310,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#6ab0ff',
   },
   restartText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
+  exitBtn: {
+    backgroundColor: '#1a1a2e', paddingHorizontal: 28,
+    paddingVertical: 10, borderRadius: 12,
+    borderWidth: 1, borderColor: '#333',
+  },
+  exitText: { color: '#666', fontSize: 13, fontWeight: '700', letterSpacing: 1 },
 });

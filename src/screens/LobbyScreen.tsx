@@ -4,14 +4,18 @@ import { CardId } from '../types';
 import { CARD_POOL } from '../constants';
 import { getUnitSprite, getBuildingSprite } from '../constants/sprites';
 import DeckScreen from './DeckScreen';
+import CollectionScreen from './CollectionScreen';
+import { PlayerProfile } from '../types/progression';
 
 interface Props {
   deck: CardId[];
   onDeckChange: (deck: CardId[]) => void;
   onPlay: () => void;
+  profile: PlayerProfile;
+  onProfileChange: (p: PlayerProfile) => void;
 }
 
-type LobbyTab = 'play' | 'deck';
+type LobbyTab = 'play' | 'deck' | 'collection';
 
 function getCardSprite(cardId: string) {
   const card = CARD_POOL.find((c) => c.id === cardId);
@@ -21,7 +25,7 @@ function getCardSprite(cardId: string) {
   return null;
 }
 
-export default function LobbyScreen({ deck, onDeckChange, onPlay }: Props) {
+export default function LobbyScreen({ deck, onDeckChange, onPlay, profile, onProfileChange }: Props) {
   const [tab, setTab] = useState<LobbyTab>('play');
 
   const avgCost = (deck.reduce((s, id) => s + (CARD_POOL.find((c) => c.id === id)?.cost ?? 0), 0) / deck.length).toFixed(1);
@@ -33,8 +37,30 @@ export default function LobbyScreen({ deck, onDeckChange, onPlay }: Props) {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>ANCIENT <Text style={styles.titleGold}>QUESTS</Text></Text>
-        <Text style={styles.subtitle}>BATTLE ARENA</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>ANCIENT <Text style={styles.titleGold}>QUESTS</Text></Text>
+          <Text style={styles.subtitle}>BATTLE ARENA</Text>
+        </View>
+        {/* Profile stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statBubble}>
+            <Text style={styles.statEmoji}>🏆</Text>
+            <Text style={styles.statVal}>{profile.trophies}</Text>
+          </View>
+          <View style={styles.statBubble}>
+            <Text style={styles.statEmoji}>🪙</Text>
+            <Text style={styles.statVal}>{profile.gold}</Text>
+          </View>
+          <View style={styles.statBubble}>
+            <Text style={styles.statEmoji}>💎</Text>
+            <Text style={styles.statVal}>{profile.diamonds}</Text>
+          </View>
+          <View style={styles.statBubble}>
+            <Text style={styles.statVal}>{profile.wins}W</Text>
+            <Text style={styles.statSep}>/</Text>
+            <Text style={[styles.statVal, { color: '#e63946' }]}>{profile.losses}L</Text>
+          </View>
+        </View>
       </View>
 
       {/* Tab bar */}
@@ -50,6 +76,12 @@ export default function LobbyScreen({ deck, onDeckChange, onPlay }: Props) {
           onPress={() => setTab('deck')}
         >
           <Text style={[styles.tabText, tab === 'deck' && styles.tabTextActive]}>🗂  DECK</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'collection' && styles.tabActive]}
+          onPress={() => setTab('collection')}
+        >
+          <Text style={[styles.tabText, tab === 'collection' && styles.tabTextActive]}>📦  CARDS</Text>
         </TouchableOpacity>
       </View>
 
@@ -110,6 +142,10 @@ export default function LobbyScreen({ deck, onDeckChange, onPlay }: Props) {
         {tab === 'deck' && (
           <DeckScreen deck={deck} onDeckChange={onDeckChange} />
         )}
+
+        {tab === 'collection' && (
+          <CollectionScreen profile={profile} onProfileChange={onProfileChange} />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -124,18 +160,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#3a86ff14',
   },
   header: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1a1a2e',
+    paddingTop: 10, paddingBottom: 12,
+    borderBottomWidth: 1, borderBottomColor: '#1a1a2e',
+    paddingHorizontal: 16,
   },
+  headerTop: { alignItems: 'center', marginBottom: 10 },
   title: {
-    color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 4,
+    color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 4,
   },
   titleGold: { color: '#f1c40f' },
   subtitle: {
-    color: '#3a86ff', fontSize: 11, fontWeight: '700', letterSpacing: 3, marginTop: 2,
+    color: '#3a86ff', fontSize: 10, fontWeight: '700', letterSpacing: 3, marginTop: 2,
   },
+  statsRow: {
+    flexDirection: 'row', gap: 8, justifyContent: 'center',
+  },
+  statBubble: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#111428', borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: '#2a2a4a',
+  },
+  statEmoji: { fontSize: 13 },
+  statVal: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  statSep: { color: '#444', fontSize: 12 },
   tabs: {
     flexDirection: 'row',
     backgroundColor: '#0e0e22',
